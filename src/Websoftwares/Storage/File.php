@@ -35,11 +35,12 @@ class File implements \Websoftwares\CacheInterface
     {
         $expiration = (int) $expiration;
 
-        if($expiration > 0) {
+        if ($expiration > 0) {
             $this->expiration = $expiration;
         } else {
             throw new \InvalidArgumentException($expiration . " is an invalid expiration argument");
         }
+
         return $this;
     }
 
@@ -64,7 +65,7 @@ class File implements \Websoftwares\CacheInterface
      */
     public function setPath($path = '')
     {
-        if(! $path) {
+        if (! $path) {
             throw new \InvalidArgumentException($path . " is an invalid path argument");
         }
         $this->path = $path;
@@ -82,10 +83,11 @@ class File implements \Websoftwares\CacheInterface
     {
         if (!file_exists($this->path)) {
 
-            if(!@mkdir($this->path , 0777, true)) {
+            if (!@mkdir($this->path , 0777, true)) {
                 throw new \OutOfRangeException("Error creating folder: " . $this->path);
             }
         }
+
         return $this->path;
     }
 
@@ -100,12 +102,13 @@ class File implements \Websoftwares\CacheInterface
      */
     public function save($key = null, $value = null)
     {
-        if(!$key) {
+        if (!$key) {
             throw new \InvalidArgumentException($key . " is an invalid key argument");
         }
-        if(!$value) {
+        if (!$value) {
             throw new \InvalidArgumentException($value . " is an invalid value argument");
         }
+
         return file_put_contents($this->fileName($key), gzcompress(serialize($value)),9) ? true : false;
     }
 
@@ -125,8 +128,9 @@ class File implements \Websoftwares\CacheInterface
             throw new \OutOfRangeException("the file " . $file . " could not be retrieved");
         }
 
-        if(filemtime($file) < (time() - $this->getExpiration())) {
+        if (filemtime($file) < (time() - $this->getExpiration())) {
             $this->delete($key);
+
             return false;
         }
 
@@ -146,6 +150,7 @@ class File implements \Websoftwares\CacheInterface
         if (!file_exists($file)) {
             throw new \OutOfRangeException("the file " . $file . " could not be deleted");
         }
+
         return unlink($file);
     }
 

@@ -63,7 +63,8 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         rmdir('cache');
     }
 
-    public function testCacheStorageFilePath() {
+    public function testCacheStorageFilePath()
+    {
         $path = 'c4ch3d';
 
         Cache::storage(new File())
