@@ -48,7 +48,7 @@ $cache->get('key');
 
 This requires u have the PHP memcache extension installed.
 
-on Debian/Ubuntu systems for example install ike this (requires administrative password).
+on Debian/Ubuntu systems for example install like this (requires administrative password).
 
 ```
 sudo apt-get install php5-memcache
@@ -59,14 +59,18 @@ sudo apt-get install php5-memcache
 <?php
 use Websoftwares\Cache, Websoftwares\Storage\Memcache;
 
-$cache = Cache::storage(new File())
- ->setPath('/super/spot')
- ->setExpiration(86000);
+$memcache = Cache::storage(new Memcache())
+    ->setConnection(function() {
+        $instance = new \Memcache;
+        $instance->connect('localhost','11211');
+        return $instance;
+    })
+    ->setExpiration(2);
 
-$cache->save('key',["a","b","c"]);
+$memcache->save('key',["a","b","c"]);
 
 // Retrieve the cache
 
-$cache->get('key');
+$memcache->get('key');
 
 ```
