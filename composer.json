@@ -2,7 +2,7 @@
     "name": "websoftwares/cache",
     "description": "Yet another caching implementation",
     "license": "DBAD",
-    "keywords": ["Cache","File"],
+    "keywords": ["Cache","File", "Memcache"],
     "authors": [
         {
             "name": "Boris Verhaaff",

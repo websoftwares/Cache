@@ -1,20 +1,40 @@
 <?php
 
-use Websoftwares\Cache, Websoftwares\Storage\File;
+use Websoftwares\Cache, Websoftwares\Storage\File, Websoftwares\Storage\Memcache;
 
 class CacheTest extends \PHPUnit_Framework_TestCase
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Defaults
+    |--------------------------------------------------------------------------
+    */
     public function setUp()
     {
         $this->expiration = 3600;
         $this->path = 'cache';
+        $this->connection = null;
     }
 
     public function testInstantiateAsObjectSucceeds()
     {
         $this->assertInstanceOf('Websoftwares\Storage\File', Cache::storage(new File()));
+        $this->assertInstanceOf('Websoftwares\Storage\Memcache', Cache::storage(new Memcache()));
     }
 
+    /**
+     * @expectedException Exception
+     */
+    public function testInstantiateAsObjectFails()
+    {
+        Cache::storage(new stdClass);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for file cache
+    |--------------------------------------------------------------------------
+    */
     public function testCacheStorageFileSaveSucceeds()
     {
         $this->assertTrue(Cache::storage(new File())->save('test',range('c', 'a')));
@@ -44,7 +64,6 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         // Cleanup
         rmdir('cache');
     }
-
     public function testCacheStorageFileExpiration()
     {
         $cache = Cache::storage(new File());
@@ -58,9 +77,6 @@ class CacheTest extends \PHPUnit_Framework_TestCase
 
         sleep(3);
         $this->assertFalse($cache->get('test'));
-
-        // Cleanup
-        rmdir('cache');
     }
 
     public function testCacheStorageFilePath()
@@ -89,16 +105,11 @@ class CacheTest extends \PHPUnit_Framework_TestCase
 
             $property->setAccessible(true);
             $propertyName = $property->name;
-            $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new File())));
-        }
-    }
 
-    /**
-     * @expectedException Exception
-     */
-    public function testInstantiateAsObjectFails()
-    {
-        Cache::storage(new stdClass);
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new File())));
+            }
+        }
     }
 
     /**
@@ -166,6 +177,212 @@ class CacheTest extends \PHPUnit_Framework_TestCase
 
     public function testCleanupDirectory()
     {
-        $this->assertTrue(rmdir('cache'));
+        rmdir('cache');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for memcache cache
+    |--------------------------------------------------------------------------
+    */
+    public function testCacheStorageMemcacheSaveSucceeds()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                $instance = new \Memcache;
+                $instance->connect('localhost','11211');
+
+                return $instance;
+            })
+            ->setExpiration(1);
+
+        $this->assertTrue($memcache->save('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageMemcacheAddSucceeds()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                $instance = new \Memcache;
+                $instance->connect('localhost','11211');
+
+                return $instance;
+            })
+            ->setExpiration(1);
+
+        $this->assertTrue($memcache->add('test2',range('c', 'a')));
+    }
+
+    public function testCacheStorageMemcacheReplaceSucceeds()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                $instance = new \Memcache;
+                $instance->connect('localhost','11211');
+
+                return $instance;
+            })
+            ->setExpiration(1);
+
+        $this->assertTrue($memcache->replace('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageMemcacheDeleteSucceeds()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                $instance = new \Memcache;
+                $instance->connect('localhost','11211');
+
+                return $instance;
+            });
+
+        $this->assertTrue($memcache->delete('test'));
+        $this->assertTrue($memcache->delete('test2'));
+    }
+
+    public function testCacheStorageMemcacheGetSucceeds()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                $instance = new \Memcache;
+                $instance->connect('localhost','11211');
+
+                return $instance;
+            })
+            ->setExpiration(5);
+
+        $memcache->save('test',range('c', 'a'));
+        $expected = ['c','b','a'];
+        $this->assertEquals($memcache->get('test'), $expected);
+
+        $memcache->delete('test');
+    }
+
+    public function testCacheStorageMemcacheExpiration()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                $instance = new \Memcache;
+                $instance->connect('localhost','11211');
+
+                return $instance;
+            })
+            ->setExpiration(2);
+
+        $memcache
+            ->save('test',range('c', 'a'));
+
+        sleep(1);
+        $expected = ['c','b','a'];
+        $this->assertEquals($memcache->get('test'), $expected);
+
+        sleep(3);
+        $this->assertFalse($memcache->get('test'));
+        $memcache->delete('test');
+    }
+
+    public function testCacheStorageMemcachePropertyValuesSucceeds()
+    {
+        $cache = new ReflectionClass(Cache::storage(new Memcache()));
+
+        foreach ($cache->getProperties() as $property) {
+
+            $property->setAccessible(true);
+            $propertyName = $property->name;
+
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new Memcache())));
+            }
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheSetExpirationFails()
+    {
+        Cache::storage(new Memcache())->setExpiration('test');
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testCacheStorageMemcacheGetConnectionInstanceOfMemcacheFails()
+    {
+        $memcache = Cache::storage(new Memcache())
+            ->setConnection(function() {
+                return new \stdClass;
+            });
+
+        $memcacheReflection = new ReflectionClass($memcache);
+        $getConnection = $memcacheReflection->getMethod('getConnection');
+        $getConnection->setAccessible(true);
+
+        $getConnection->invoke($memcache);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheSaveFails()
+    {
+        Cache::storage(new Memcache())->save();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheSaveValueFails()
+    {
+        Cache::storage(new Memcache())->save('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheAddFails()
+    {
+        Cache::storage(new Memcache())->add();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheAddValueFails()
+    {
+        Cache::storage(new Memcache())->add('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheReplaceFails()
+    {
+        Cache::storage(new Memcache())->replace();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheReplaceValueFails()
+    {
+        Cache::storage(new Memcache())->replace('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheGetFails()
+    {
+        Cache::storage(new Memcache())->get();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcacheDeleteFails()
+    {
+        Cache::storage(new Memcache())->delete();
     }
 }

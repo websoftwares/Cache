@@ -10,6 +10,11 @@ namespace Websoftwares;
  */
 class Cache
 {
+    /**
+     * storage get storage and perform tasks
+     * @param  Object $storage
+     * @return Object
+     */
     public static function storage(CacheInterface $storage = null)
     {
         return $storage;

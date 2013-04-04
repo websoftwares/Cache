@@ -15,7 +15,6 @@ interface CacheInterface
      *
      * @param $key
      * @param $value
-     * @author boris <boris@websoftwar.es>
      */
     public function save($key,$value);
 
@@ -23,7 +22,6 @@ interface CacheInterface
      * get
      *
      * @param $key
-     * @author boris <boris@websoftwar.es>
      */
     public function get($key);
 
@@ -31,7 +29,6 @@ interface CacheInterface
      * delete
      *
      * @param $key
-     * @author boris <boris@websoftwar.es>
      */
     public function delete($key);
 }
