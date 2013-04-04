@@ -268,7 +268,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
 
                 return $instance;
             })
-            ->setExpiration(2);
+            ->setExpiration(5);
 
         $memcache
             ->save('test',range('c', 'a'));
@@ -277,7 +277,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $expected = ['c','b','a'];
         $this->assertEquals($memcache->get('test'), $expected);
 
-        sleep(3);
+        sleep(10);
         $this->assertFalse($memcache->get('test'));
         $memcache->delete('test');
     }
