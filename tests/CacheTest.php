@@ -273,11 +273,10 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $memcache
             ->save('test',range('c', 'a'));
 
-        sleep(1);
         $expected = ['c','b','a'];
         $this->assertEquals($memcache->get('test'), $expected);
 
-        sleep(10);
+        sleep(5);
         $this->assertFalse($memcache->get('test'));
         $memcache->delete('test');
     }
