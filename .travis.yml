@@ -9,6 +9,6 @@ services:
 before_script:
   - curl -s http://getcomposer.org/installer | php
   - php composer.phar install
-  - echo "extension = <memcache>.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - echo "extension = memcache.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script: phpunit -c phpunit.xml
