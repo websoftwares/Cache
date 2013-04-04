@@ -3,7 +3,8 @@
 use Websoftwares\Cache,
     Websoftwares\Storage\File,
     Websoftwares\Storage\Memcache,
-    Websoftwares\Storage\Redis;
+    Websoftwares\Storage\Redis,
+    Websoftwares\Storage\Riak;
 
 class CacheTest extends \PHPUnit_Framework_TestCase
 {
@@ -18,6 +19,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->path = 'cache';
         $this->connection = null;
         $this->tag = 'cache';
+        $this->bucket = 'cache';
     }
 
     public function testInstantiateAsObjectSucceeds()
@@ -25,6 +27,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Websoftwares\Storage\File', Cache::storage(new File()));
         $this->assertInstanceOf('Websoftwares\Storage\Memcache', Cache::storage(new Memcache()));
         $this->assertInstanceOf('Websoftwares\Storage\Redis', Cache::storage(new Redis()));
+        $this->assertInstanceOf('Websoftwares\Storage\Riak', Cache::storage(new Riak()));
     }
 
     /**
@@ -567,5 +570,148 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     public function testCacheStorageRedisExistsFails()
     {
         Cache::storage(new Redis())->exists();
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for riak cache
+    |--------------------------------------------------------------------------
+    */
+    public function testCacheStorageRiakSaveSucceeds()
+    {
+        $riak = Cache::storage(new Riak())
+            ->setConnection(function() {
+                $client = new \Basho\Riak\Riak('127.0.0.1', 8098);
+
+                return $client;
+            })
+            ->setBucket('testBucket')
+            ->setExpiration(50);
+
+        $this->assertTrue($riak->save('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageRiakDeleteSucceeds()
+    {
+        $riak = Cache::storage(new Riak())
+            ->setConnection(function() {
+                $client = new \Basho\Riak\Riak('127.0.0.1', 8098);
+
+                return $client;
+            })
+            ->setBucket('testBucket');
+
+        $this->assertTrue($riak->delete('test'));
+    }
+
+    public function testCacheStorageRiakGetSucceeds()
+    {
+        $riak = Cache::storage(new Riak())
+            ->setConnection(function() {
+                $client = new \Basho\Riak\Riak('127.0.0.1', 8098);
+
+                return $client;
+            })
+            ->setBucket('testBucket')
+            ->setExpiration(5);
+
+        $riak->save('test',range('c', 'a'));
+        $expected = ['c','b','a'];
+        $this->assertEquals($riak->get('test'), $expected);
+
+        $riak->delete('test');
+    }
+
+    public function testCacheStorageRiakExpiration()
+    {
+        $riak = Cache::storage(new Riak())
+            ->setConnection(function() {
+                $client = new \Basho\Riak\Riak('127.0.0.1', 8098);
+
+                return $client;
+            })
+            ->setBucket('testBucket')
+            ->setExpiration(1);
+
+        $riak
+            ->save('test',range('c', 'a'));
+
+        $expected = ['c','b','a'];
+        $this->assertEquals($riak->get('test'), $expected);
+
+        sleep(3);
+        $this->assertFalse($riak->get('test'));
+        $riak->delete('test');
+    }
+
+    public function testCacheStorageRiakPropertyValuesSucceeds()
+    {
+        $cache = new ReflectionClass(Cache::storage(new Riak()));
+
+        foreach ($cache->getProperties() as $property) {
+
+            $property->setAccessible(true);
+            $propertyName = $property->name;
+
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new Riak())));
+            }
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRiakSetExpirationFails()
+    {
+        Cache::storage(new Riak())->setExpiration('test');
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testCacheStorageRiakConnectionInstanceOfPredisClientFails()
+    {
+        $redis = Cache::storage(new Riak())
+            ->setConnection(function() {
+                return new \stdClass;
+            });
+
+        $riakReflection = new ReflectionClass($riak);
+        $getConnection = $riakReflection->getMethod('getConnection');
+        $getConnection->setAccessible(true);
+
+        $getConnection->invoke($riak);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRiakSaveFails()
+    {
+        Cache::storage(new Riak())->save();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRiakSaveValueFails()
+    {
+        Cache::storage(new Riak())->save('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRiakGetFails()
+    {
+        Cache::storage(new Riak())->get();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRiakDeleteFails()
+    {
+        Cache::storage(new Riak())->delete();
     }
 }

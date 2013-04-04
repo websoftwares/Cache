@@ -25,6 +25,7 @@ Available storage options:
 *   File (saves the cache to a file)
 *   Memcache (save the cache to a memcache instance)
 *   Redis (save the cache to a redis instance)
+*   Riak (save the cache to a riak instance)
 
 ## File
 
@@ -96,5 +97,28 @@ $redis->save('key',["a","b","c"]);
 // Retrieve the cache
 
 $redis->get('key');
+
+```
+
+## Riak
+
+This requires u have the PHP [Riak](https://github.com/basho/riak-php-client "Riak") official package installed.
+
+```php
+use Websoftwares\Cache, Websoftwares\Storage\Riak;
+
+$riak = Cache::storage(new Riak())
+    ->setConnection(function() {
+        $client = new \Basho\Riak\Riak('127.0.0.1', 8098);
+        return $client;
+    })
+    ->setBucket('testBucket')
+    ->setExpiration(86400);
+
+$riak->save('key',["a","b","c"]);
+
+// Retrieve the cache
+
+$riak->get('key');
 
 ```
