@@ -1,6 +1,9 @@
 <?php
 
-use Websoftwares\Cache, Websoftwares\Storage\File, Websoftwares\Storage\Memcache;
+use Websoftwares\Cache,
+    Websoftwares\Storage\File,
+    Websoftwares\Storage\Memcache,
+    Websoftwares\Storage\Redis;
 
 class CacheTest extends \PHPUnit_Framework_TestCase
 {
@@ -14,12 +17,14 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->expiration = 3600;
         $this->path = 'cache';
         $this->connection = null;
+        $this->tag = 'cache';
     }
 
     public function testInstantiateAsObjectSucceeds()
     {
         $this->assertInstanceOf('Websoftwares\Storage\File', Cache::storage(new File()));
         $this->assertInstanceOf('Websoftwares\Storage\Memcache', Cache::storage(new Memcache()));
+        $this->assertInstanceOf('Websoftwares\Storage\Redis', Cache::storage(new Redis()));
     }
 
     /**
@@ -383,5 +388,184 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     public function testCacheStorageMemcacheDeleteFails()
     {
         Cache::storage(new Memcache())->delete();
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for redis cache
+    |--------------------------------------------------------------------------
+    */
+    public function testCacheStorageRedisSaveSucceeds()
+    {
+        $redis = Cache::storage(new Redis())
+            ->setConnection(function() {
+                $client = new \Predis\Client([
+                    'scheme'   => 'tcp',
+                    'host'     => '127.0.0.1',
+                    'port'     => 6379,
+                ]);
+
+                return $client;
+            })
+            ->setExpiration(50);
+
+        $this->assertTrue($redis->save('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageRedisExistsSucceeds()
+    {
+        $redis = Cache::storage(new Redis())
+            ->setConnection(function() {
+                $client = new \Predis\Client([
+                    'scheme'   => 'tcp',
+                    'host'     => '127.0.0.1',
+                    'port'     => 6379,
+                ]);
+
+                return $client;
+            });
+
+        $this->assertTrue($redis->exists('test'));
+    }
+
+    public function testCacheStorageRedisDeleteSucceeds()
+    {
+        $redis = Cache::storage(new Redis())
+            ->setConnection(function() {
+                $client = new \Predis\Client([
+                    'scheme'   => 'tcp',
+                    'host'     => '127.0.0.1',
+                    'port'     => 6379,
+                ]);
+
+                return $client;
+            });
+
+        $this->assertTrue($redis->delete('test'));
+    }
+
+    public function testCacheStorageRedisGetSucceeds()
+    {
+        $redis = Cache::storage(new Redis())
+            ->setConnection(function() {
+                $client = new \Predis\Client([
+                    'scheme'   => 'tcp',
+                    'host'     => '127.0.0.1',
+                    'port'     => 6379,
+                ]);
+
+                return $client;
+            })
+            ->setExpiration(5);
+
+        $redis->save('test',range('c', 'a'));
+        $expected = ['c','b','a'];
+        $this->assertEquals($redis->get('test'), $expected);
+
+        $redis->delete('test');
+    }
+
+    public function testCacheStorageRedisExpiration()
+    {
+        $redis = Cache::storage(new Redis())
+            ->setConnection(function() {
+                $client = new \Predis\Client([
+                    'scheme'   => 'tcp',
+                    'host'     => '127.0.0.1',
+                    'port'     => 6379,
+                ]);
+
+                return $client;
+            })
+            ->setExpiration(1);
+
+        $redis
+            ->save('test',range('c', 'a'));
+
+        $expected = ['c','b','a'];
+        $this->assertEquals($redis->get('test'), $expected);
+
+        sleep(3);
+        $this->assertFalse($redis->get('test'));
+        $redis->delete('test');
+    }
+
+    public function testCacheStorageRedisPropertyValuesSucceeds()
+    {
+        $cache = new ReflectionClass(Cache::storage(new Redis()));
+
+        foreach ($cache->getProperties() as $property) {
+
+            $property->setAccessible(true);
+            $propertyName = $property->name;
+
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new Redis())));
+            }
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRedisSetExpirationFails()
+    {
+        Cache::storage(new Redis())->setExpiration('test');
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testCacheStorageRedisConnectionInstanceOfPredisClientFails()
+    {
+        $redis = Cache::storage(new Redis())
+            ->setConnection(function() {
+                return new \stdClass;
+            });
+
+        $redisReflection = new ReflectionClass($redis);
+        $getConnection = $redisReflection->getMethod('getConnection');
+        $getConnection->setAccessible(true);
+
+        $getConnection->invoke($redis);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRedisSaveFails()
+    {
+        Cache::storage(new Redis())->save();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRedisSaveValueFails()
+    {
+        Cache::storage(new Redis())->save('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRedisGetFails()
+    {
+        Cache::storage(new Redis())->get();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRedisDeleteFails()
+    {
+        Cache::storage(new Redis())->delete();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageRedisExistsFails()
+    {
+        Cache::storage(new Redis())->exists();
     }
 }

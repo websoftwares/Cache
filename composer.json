@@ -2,7 +2,7 @@
     "name": "websoftwares/cache",
     "description": "Yet another caching implementation",
     "license": "DBAD",
-    "keywords": ["Cache","File", "Memcache"],
+    "keywords": ["Cache","File","Memcache", "Redis"],
     "authors": [
         {
             "name": "Boris Verhaaff",
@@ -18,6 +18,10 @@
         "php": ">=5.4.0"
     },
     "require-dev": {
+        "predis/predis": "dev-master",
         "phpunit/phpunit": "3.7.*"
+    },
+    "suggest": {
+        "predis/predis": "Required for the Redis storage option"
     }
 }

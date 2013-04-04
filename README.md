@@ -9,7 +9,6 @@ Yet another caching implementation.
 Basic usage applies to all cache storage options
 
 ```php
-<?php
 use Websoftwares\Cache, Websoftwares\Storage\File;
 
 Cache::storage(new File())->save('key',["a","b","c"]);
@@ -24,17 +23,17 @@ Cache::storage(new File())->get('key');
 Available storage options:
 
 *   File (saves the cache to a file)
-*   Memcache (save the cache to an memcache instance)
+*   Memcache (save the cache to a memcache instance)
+*   Redis (save the cache to a redis instance)
 
 ## File
 
 ```php
-<?php
 use Websoftwares\Cache, Websoftwares\Storage\File;
 
 $cache = Cache::storage(new File())
  ->setPath('/super/spot')
- ->setExpiration(86000);
+ ->setExpiration(86400);
 
 $cache->save('key',["a","b","c"]);
 
@@ -56,7 +55,6 @@ sudo apt-get install php5-memcache
 ```
 
 ```php
-<?php
 use Websoftwares\Cache, Websoftwares\Storage\Memcache;
 
 $memcache = Cache::storage(new Memcache())
@@ -65,12 +63,38 @@ $memcache = Cache::storage(new Memcache())
         $instance->connect('localhost','11211');
         return $instance;
     })
-    ->setExpiration(2);
+    ->setExpiration(86400);
 
 $memcache->save('key',["a","b","c"]);
 
 // Retrieve the cache
 
 $memcache->get('key');
+
+```
+
+## Redis
+
+This requires u have the PHP [Predis](https://github.com/nrk/predis "Predis") package installed.
+
+```php
+use Websoftwares\Cache, Websoftwares\Storage\Redis;
+
+$redis = Cache::storage(new Redis())
+    ->setConnection(function() {
+        $client = new \Predis\Client([
+            'scheme'   => 'tcp',
+            'host'     => '127.0.0.1',
+            'port'     => 6379,
+        ]);
+        return $client;
+    })
+    ->setExpiration(86400);
+
+$redis->save('key',["a","b","c"]);
+
+// Retrieve the cache
+
+$redis->get('key');
 
 ```
