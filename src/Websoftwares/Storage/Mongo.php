@@ -161,7 +161,7 @@ class Mongo implements \Websoftwares\CacheInterface
 
             return true;
 
-        } catch(\MongoCursorException $e) {
+        } catch (\MongoCursorException $e) {
             throw $e;
         }
     }

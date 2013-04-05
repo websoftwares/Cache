@@ -729,6 +729,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
             ->setConnection(function() {
                 $m = new \MongoClient();
                 $db = $m->mongocache;
+
                 return $db;
             })
             ->setCollection('test');
@@ -741,6 +742,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
             ->setConnection(function() {
                 $m = new \MongoClient();
                 $db = $m->mongocache;
+
                 return $db;
             })
             ->setCollection('test');
@@ -754,6 +756,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
             ->setConnection(function() {
                 $m = new \MongoClient();
                 $db = $m->mongocache;
+
                 return $db;
             })
             ->setCollection('test');
@@ -771,6 +774,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
             ->setConnection(function() {
                 $m = new \MongoClient();
                 $db = $m->mongocache;
+
                 return $db;
             })
             ->setCollection('test')
