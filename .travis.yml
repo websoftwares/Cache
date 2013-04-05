@@ -7,7 +7,7 @@ services:
   - memcached
   - redis-server
   - riak
-  - mongo
+  - mongodb
 
 before_script:
   - curl -s http://getcomposer.org/installer | php
