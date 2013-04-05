@@ -126,11 +126,12 @@ $riak->get('key');
 
 ## Mongo
 This storage option makes use of the "ensureIndex" method option "expireAfterSeconds".
+
 This option can only be used if the following requirements are met.
 
 Requirements:
-1.    Latest PHP Mongo extension installed
-2.    mongoDB deamon version 2.2+ | [read more](http://docs.mongodb.org/manual/tutorial/expire-data/ "More information")
+1.  Latest PHP Mongo extension installed
+2.  mongoDB deamon version 2.2+ | [read more](http://docs.mongodb.org/manual/tutorial/expire-data/ "More information")
 
 On debian/ubuntu systems run the following command to install the mongo extension (requires administrator password).
 
