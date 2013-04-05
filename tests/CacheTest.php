@@ -4,7 +4,8 @@ use Websoftwares\Cache,
     Websoftwares\Storage\File,
     Websoftwares\Storage\Memcache,
     Websoftwares\Storage\Redis,
-    Websoftwares\Storage\Riak;
+    Websoftwares\Storage\Riak,
+    Websoftwares\Storage\Mongo;
 
 class CacheTest extends \PHPUnit_Framework_TestCase
 {
@@ -20,6 +21,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->connection = null;
         $this->tag = 'cache';
         $this->bucket = 'cache';
+        $this->collection = 'cache';
     }
 
     public function testInstantiateAsObjectSucceeds()
@@ -28,6 +30,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Websoftwares\Storage\Memcache', Cache::storage(new Memcache()));
         $this->assertInstanceOf('Websoftwares\Storage\Redis', Cache::storage(new Redis()));
         $this->assertInstanceOf('Websoftwares\Storage\Riak', Cache::storage(new Riak()));
+        $this->assertInstanceOf('Websoftwares\Storage\Mongo', Cache::storage(new Mongo()));
     }
 
     /**
@@ -713,5 +716,146 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     public function testCacheStorageRiakDeleteFails()
     {
         Cache::storage(new Riak())->delete();
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for mongo cache
+    |--------------------------------------------------------------------------
+    */
+    public function testCacheStorageMongoSaveSucceeds()
+    {
+
+        $mongo = Cache::storage(new Mongo())
+            ->setConnection(function() {
+                $m = new \MongoClient();
+                $db = $m->mongocache;
+                return $db;
+            })
+            ->setCollection('test');
+        $this->assertTrue($mongo->save('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageMongoDeleteSucceeds()
+    {
+        $mongo = Cache::storage(new Mongo())
+            ->setConnection(function() {
+                $m = new \MongoClient();
+                $db = $m->mongocache;
+                return $db;
+            })
+            ->setCollection('test');
+
+        $this->assertTrue($mongo->delete('test'));
+    }
+
+    public function testCacheStorageMongoGetSucceeds()
+    {
+        $mongo = Cache::storage(new Mongo())
+            ->setConnection(function() {
+                $m = new \MongoClient();
+                $db = $m->mongocache;
+                return $db;
+            })
+            ->setCollection('test');
+
+        $mongo->save('test',range('c', 'a'));
+        $expected = ['c','b','a'];
+        $this->assertEquals($mongo->get('test'), $expected);
+
+        $mongo->delete('test');
+    }
+
+    public function testCacheStorageMongoExpiration()
+    {
+        $mongo = Cache::storage(new Mongo())
+            ->setConnection(function() {
+                $m = new \MongoClient();
+                $db = $m->mongocache;
+                return $db;
+            })
+            ->setCollection('test')
+            ->setExpiration(1);
+
+        $mongo
+            ->save('test',range('c', 'a'));
+
+        $expected = ['c','b','a'];
+        $this->assertEquals($mongo->get('test'), $expected);
+
+        sleep(60);
+        $this->assertFalse($mongo->get('test'));
+        $mongo->delete('test');
+    }
+
+    public function testCacheStorageMongoPropertyValuesSucceeds()
+    {
+        $cache = new ReflectionClass(Cache::storage(new Mongo()));
+
+        foreach ($cache->getProperties() as $property) {
+
+            $property->setAccessible(true);
+            $propertyName = $property->name;
+
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new Mongo())));
+            }
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMongoSetExpirationFails()
+    {
+        Cache::storage(new Mongo())->setExpiration('test');
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testCacheStorageMongoConnectionInstanceOfMongoClientClientFails()
+    {
+        $mongo = Cache::storage(new Mongo())
+            ->setConnection(function() {
+                return new \stdClass;
+            });
+
+        $mongoReflection = new ReflectionClass($mongo);
+        $getConnection = $mongoReflection->getMethod('getConnection');
+        $getConnection->setAccessible(true);
+
+        $getConnection->invoke($mongo);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMongoSaveFails()
+    {
+        Cache::storage(new Mongo())->save();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMongoSaveValueFails()
+    {
+        Cache::storage(new Mongo())->save('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMongoGetFails()
+    {
+        Cache::storage(new Mongo())->get();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMongoDeleteFails()
+    {
+        Cache::storage(new Mongo())->delete();
     }
 }

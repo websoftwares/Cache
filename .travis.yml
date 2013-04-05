@@ -7,10 +7,12 @@ services:
   - memcached
   - redis-server
   - riak
+  - mongo
 
 before_script:
   - curl -s http://getcomposer.org/installer | php
   - php composer.phar install --dev
   - echo "extension = memcache.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - echo "extension = mongo.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script: phpunit -c phpunit.xml
