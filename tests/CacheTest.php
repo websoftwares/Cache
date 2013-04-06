@@ -1,6 +1,7 @@
 <?php
 
 use Websoftwares\Cache,
+    Websoftwares\Storage\Apc,
     Websoftwares\Storage\File,
     Websoftwares\Storage\Memcache,
     Websoftwares\Storage\Redis,
@@ -42,7 +43,112 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     {
         Cache::storage(new stdClass);
     }
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for apc cache
+    |--------------------------------------------------------------------------
+    */
+    public function testCacheStorageApcSaveSucceeds()
+    {
+        $apc = Cache::storage(new Apc())->setExpiration(1);
 
+        $this->assertTrue($apc->save('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageApcAddSucceeds()
+    {
+        $apc = Cache::storage(new Apc())->setExpiration(1);
+
+        $this->assertTrue($apc->store('test2',range('c', 'a')));
+    }
+
+    public function testCacheStorageApcDeleteSucceeds()
+    {
+        $this->assertTrue(Cache::storage(new Apc())->delete('test'));
+        $this->assertTrue(Cache::storage(new Apc())->delete('test2'));
+    }
+
+    public function testCacheStorageApcGetSucceeds()
+    {
+        $apc = Cache::storage(new Apc())->setExpiration(5);
+
+        $apc->save('test',range('c', 'a'));
+        $expected = ['c','b','a'];
+        $this->assertEquals($apc->get('test'), $expected);
+
+        $apc->delete('test');
+    }
+
+    public function testCacheStorageApcPropertyValuesSucceeds()
+    {
+        $cache = new ReflectionClass(Cache::storage(new Apc()));
+
+        foreach ($cache->getProperties() as $property) {
+
+            $property->setAccessible(true);
+            $propertyName = $property->name;
+
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new Apc())));
+            }
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcSetExpirationFails()
+    {
+        Cache::storage(new Apc())->setExpiration('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcSaveFails()
+    {
+        Cache::storage(new Apc())->save();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcSaveValueFails()
+    {
+        Cache::storage(new Apc())->save('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcStoreFails()
+    {
+        Cache::storage(new Apc())->store();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcStoreValueFails()
+    {
+        Cache::storage(new Apc())->store('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcGetFails()
+    {
+        Cache::storage(new Apc())->get();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageApcDeleteFails()
+    {
+        Cache::storage(new Apc())->delete();
+    }
     /*
     |--------------------------------------------------------------------------
     | Tests for file cache

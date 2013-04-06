@@ -118,7 +118,6 @@ class File implements \Websoftwares\CacheInterface
      * @param $key
      *
      * @return mixed false/stored value
-     * @author boris <boris@websoftwar.es>
      */
     public function get($key)
     {
@@ -141,7 +140,6 @@ class File implements \Websoftwares\CacheInterface
      * delete cache file
      *
      * @param $key
-     * @author boris <boris@websoftwar.es>
      */
     public function delete($key)
     {
