@@ -24,9 +24,10 @@ Available storage options:
 
 *   File (saves the cache to a file)
 *   Memcache (save the cache to a memcache instance)
+*   Memcached (save the cache to a memcached instance)
+*   MongoDB (save the cache to a mongo instance)
 *   Redis (save the cache to a redis instance)
 *   Riak (save the cache to a riak instance)
-*   MongoDB (save the cache to a mongo instance)
 
 ## File
 
@@ -156,5 +157,34 @@ $mongo->save('key',["a","b","c"]);
 // Retrieve the cache
 
 $mongo->get('key');
+
+```
+## Memcached
+
+This requires u have the PHP memcached extension installed.
+
+on Debian/Ubuntu systems for example install like this (requires administrative password).
+
+```
+sudo apt-get install php5-memcached
+
+```
+
+```php
+use Websoftwares\Cache, Websoftwares\Storage\Memcached;
+
+$memcached = Cache::storage(new Memcached())
+    ->setConnection(function() {
+        $instance = new \Memcached();
+        $instance->addServer("localhost", 11211);
+        return $instance;
+    })
+    ->setExpiration(86400);
+
+$memcached->save('key',["a","b","c"]);
+
+// Retrieve the cache
+
+$memcached->get('key');
 
 ```

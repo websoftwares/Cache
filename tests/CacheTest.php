@@ -5,6 +5,7 @@ use Websoftwares\Cache,
     Websoftwares\Storage\Memcache,
     Websoftwares\Storage\Redis,
     Websoftwares\Storage\Riak,
+    Websoftwares\Storage\Memcached,
     Websoftwares\Storage\Mongo;
 
 class CacheTest extends \PHPUnit_Framework_TestCase
@@ -31,6 +32,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Websoftwares\Storage\Redis', Cache::storage(new Redis()));
         $this->assertInstanceOf('Websoftwares\Storage\Riak', Cache::storage(new Riak()));
         $this->assertInstanceOf('Websoftwares\Storage\Mongo', Cache::storage(new Mongo()));
+        $this->assertInstanceOf('Websoftwares\Storage\Memcached', Cache::storage(new Memcached()));
     }
 
     /**
@@ -861,5 +863,209 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     public function testCacheStorageMongoDeleteFails()
     {
         Cache::storage(new Mongo())->delete();
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Tests for memcached cache
+    |--------------------------------------------------------------------------
+    */
+    public function testCacheStorageMemcachedSaveSucceeds()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                $instance = new \Memcached();
+                $instance->addServer("localhost", 11211);
+
+                return $instance;
+            })
+            ->setExpiration(1);
+
+        $this->assertTrue($memcached->save('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageMemcachedAddSucceeds()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                $instance = new \Memcached();
+                $instance->addServer("localhost", 11211);
+
+                return $instance;
+            })
+            ->setExpiration(1);
+
+        $this->assertTrue($memcached->add('test2',range('c', 'a')));
+    }
+
+    public function testCacheStorageMemcachedReplaceSucceeds()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                $instance = new \Memcached();
+                $instance->addServer("localhost", 11211);
+
+                return $instance;
+            })
+            ->setExpiration(1);
+
+        $this->assertTrue($memcached->replace('test',range('c', 'a')));
+    }
+
+    public function testCacheStorageMemcachedDeleteSucceeds()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                $instance = new \Memcached();
+                $instance->addServer("localhost", 11211);
+
+                return $instance;
+            });
+
+        $this->assertTrue($memcached->delete('test'));
+        $this->assertTrue($memcached->delete('test2'));
+    }
+
+    public function testCacheStorageMemcachedGetSucceeds()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                $instance = new \Memcached();
+                $instance->addServer("localhost", 11211);
+
+                return $instance;
+            })
+            ->setExpiration(5);
+
+        $memcached->save('test',range('c', 'a'));
+        $expected = ['c','b','a'];
+        $this->assertEquals($memcached->get('test'), $expected);
+
+        $memcached->delete('test');
+    }
+
+    public function testCacheStorageMemcachedExpiration()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                $instance = new \Memcached();
+                $instance->addServer("localhost", 11211);
+
+                return $instance;
+            })
+            ->setExpiration(5);
+
+        $memcached
+            ->save('test',range('c', 'a'));
+
+        $expected = ['c','b','a'];
+        $this->assertEquals($memcached->get('test'), $expected);
+
+        sleep(5);
+        $this->assertFalse($memcached->get('test'));
+        $memcached->delete('test');
+    }
+
+    public function testCacheStorageMemcachedPropertyValuesSucceeds()
+    {
+        $cache = new ReflectionClass(Cache::storage(new Memcached()));
+
+        foreach ($cache->getProperties() as $property) {
+
+            $property->setAccessible(true);
+            $propertyName = $property->name;
+
+            if (property_exists($this, $propertyName)) {
+                $this->assertEquals($this->$propertyName, $property->getValue(Cache::storage(new Memcached())));
+            }
+        }
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedSetExpirationFails()
+    {
+        Cache::storage(new Memcached())->setExpiration('test');
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testCacheStorageMemcachedGetConnectionInstanceOfMemcachedFails()
+    {
+        $memcached = Cache::storage(new Memcached())
+            ->setConnection(function() {
+                return new \stdClass;
+            });
+
+        $memcachedReflection = new ReflectionClass($memcached);
+        $getConnection = $memcachedReflection->getMethod('getConnection');
+        $getConnection->setAccessible(true);
+
+        $getConnection->invoke($memcached);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedSaveFails()
+    {
+        Cache::storage(new Memcached())->save();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedSaveValueFails()
+    {
+        Cache::storage(new Memcached())->save('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedAddFails()
+    {
+        Cache::storage(new Memcached())->add();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedAddValueFails()
+    {
+        Cache::storage(new Memcached())->add('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedReplaceFails()
+    {
+        Cache::storage(new Memcached())->replace();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedReplaceValueFails()
+    {
+        Cache::storage(new Memcached())->replace('test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedGetFails()
+    {
+        Cache::storage(new Memcached())->get();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCacheStorageMemcachedDeleteFails()
+    {
+        Cache::storage(new Memcached())->delete();
     }
 }
